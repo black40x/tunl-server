@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var Version = "0.1.45"
+
 func startTunlServer() {
 	ctx := context.Background()
 	conf, err := server.LoadConfig()
@@ -21,7 +23,7 @@ func startTunlServer() {
 	tunlHttp := server.NewTunlHttp(conf, ctx)
 	tunlHttp.Start()
 
-	tui.PrintServerStarted(conf.Base.HTTPAddr, conf.Base.HTTPPort)
+	tui.PrintServerStarted(conf.Base.HTTPAddr, conf.Base.HTTPPort, Version)
 
 	var wait time.Duration
 	c := make(chan os.Signal, 1)

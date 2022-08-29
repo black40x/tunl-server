@@ -19,8 +19,9 @@ const (
 	YellowBold  = "\033[33;1m"
 )
 
-func PrintServerStarted(host, port string) {
+func PrintServerStarted(host, port, ver string) {
 	fmt.Printf("🚀 "+BlueBold+"Server started at %s:%s"+Reset+"\n", host, port)
+	fmt.Printf("Version %s\n", ver)
 	fmt.Printf("Visit %s for more information\n\n", "https://github.com/black40x/tunl-server")
 }
 
