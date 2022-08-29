@@ -82,6 +82,7 @@ func (s *TunlServer) Start(conf Config) error {
 			Prefix:    c.ID,
 			PublicUrl: fmt.Sprintf(conf.Tunl.ClientPublicAddr, c.ID),
 			Expire:    int64(conf.Tunl.ClientExpireAt),
+			Version:   Version,
 		})
 	}
 }

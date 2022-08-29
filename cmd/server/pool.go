@@ -11,7 +11,7 @@ import (
 )
 
 const responseKeyPrefix = "response:"
-const bodyChunkKeyPrefix = "response:"
+const bodyChunkKeyPrefix = "body-chunk:"
 
 var ErrorIdBusy = errors.New("connection id is busy")
 
