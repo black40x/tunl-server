@@ -25,17 +25,36 @@ func (s *TunlServer) GetPool() *ConnectionPool {
 	return s.pool
 }
 
-func (s *TunlServer) processCommand(cmd *commands.Transfer) {
+func (s *TunlServer) processCommand(cmd *commands.Transfer, conn *tunl.TunlConn) {
 	switch cmd.GetCommand().(type) {
+	case *commands.Transfer_ClientConnect:
+		if !s.conf.ServerPrivate || (s.conf.ServerPrivate && s.conf.ServerPassword == cmd.GetClientConnect().Password) {
+			conn.Send(&commands.ServerConnect{
+				Prefix:    conn.ID,
+				PublicUrl: fmt.Sprintf(s.conf.ClientPublicAddr, conn.ID),
+				Expire:    int64(s.conf.ClientExpireAt),
+			})
+			s.pool.SetAllowed(conn.ID)
+		}
+		if s.conf.ServerPrivate && s.conf.ServerPassword != cmd.GetClientConnect().Password {
+			conn.Send(&commands.Error{
+				Code:    tunl.ErrorUnauthorized,
+				Message: "invalid server password",
+			})
+		}
 	case *commands.Transfer_HttpResponse:
-		ch := s.pool.GetResponseChan(cmd.GetHttpResponse().Uuid)
-		if ch != nil {
-			ch <- cmd.GetHttpResponse()
+		if s.pool.IsAllowed(conn.ID) {
+			ch := s.pool.GetResponseChan(cmd.GetHttpResponse().Uuid)
+			if ch != nil {
+				ch <- cmd.GetHttpResponse()
+			}
 		}
 	case *commands.Transfer_BodyChunk:
-		ch := s.pool.GetBodyChunkChan(cmd.GetBodyChunk().Uuid)
-		if ch != nil {
-			ch <- cmd.GetBodyChunk()
+		if s.pool.IsAllowed(conn.ID) {
+			ch := s.pool.GetBodyChunkChan(cmd.GetBodyChunk().Uuid)
+			if ch != nil {
+				ch <- cmd.GetBodyChunk()
+			}
 		}
 	}
 }
@@ -58,14 +77,14 @@ func (s *TunlServer) Start(conf Config) error {
 		if s.pool.Count()+1 > s.conf.MaxClients {
 			c.Send(&commands.Error{
 				Code:    tunl.ErrorServerFull,
-				Message: "server full",
+				Message: "server client queue full",
 			})
 			c.Close()
 			continue
 		}
 
 		c.SetOnCommand(func(cmd *commands.Transfer) {
-			s.processCommand(cmd)
+			s.processCommand(cmd, c)
 		})
 		c.SetOnDisconnected(func() {
 			s.pool.Drop(c.ID)
@@ -77,12 +96,9 @@ func (s *TunlServer) Start(conf Config) error {
 		go c.HandleConnection()
 		go c.HandleExpire()
 
-		// ToDo - Add password protect
-		c.Send(&commands.ServerConnect{
-			Prefix:    c.ID,
-			PublicUrl: fmt.Sprintf(conf.Tunl.ClientPublicAddr, c.ID),
-			Expire:    int64(conf.Tunl.ClientExpireAt),
-			Version:   Version,
+		c.Send(&commands.ServerHeader{
+			Version: Version,
+			Private: s.conf.ServerPrivate,
 		})
 	}
 }

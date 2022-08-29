@@ -18,6 +18,7 @@ var ErrorIdBusy = errors.New("connection id is busy")
 type ConnectionPool struct {
 	pool       sync.Map
 	channels   sync.Map
+	allowed    sync.Map
 	prefixSize int
 }
 
@@ -25,6 +26,7 @@ func NewConnectionPool(prefixSize int) *ConnectionPool {
 	return &ConnectionPool{
 		pool:       sync.Map{},
 		channels:   sync.Map{},
+		allowed:    sync.Map{},
 		prefixSize: prefixSize,
 	}
 }
@@ -62,6 +64,11 @@ func (p *ConnectionPool) Drop(id string) {
 	if ok {
 		conn.(*tunl.TunlConn).Close()
 		p.pool.Delete(id)
+	}
+
+	_, ok = p.allowed.Load(id)
+	if ok {
+		p.allowed.Delete(id)
 	}
 }
 
@@ -101,6 +108,19 @@ func (p *ConnectionPool) MakeBodyChunkChan(uuid string) chan *commands.BodyChunk
 	channel := make(chan *commands.BodyChunk, 100)
 	p.channels.Store(bodyChunkKeyPrefix+uuid, channel)
 	return channel
+}
+
+func (p *ConnectionPool) SetAllowed(id string) {
+	p.allowed.Store(id, true)
+}
+
+func (p *ConnectionPool) IsAllowed(id string) bool {
+	allow, ok := p.allowed.Load(id)
+	if !ok {
+		return false
+	}
+
+	return allow.(bool)
 }
 
 func (p *ConnectionPool) CloseChannels(uuid string) {

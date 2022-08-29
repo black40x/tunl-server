@@ -27,6 +27,8 @@ type TunlConfig struct {
 	MaxPostSize      int
 	ClientExpireAt   int
 	UriPrefixSize    int
+	ServerPrivate    bool
+	ServerPassword   string
 }
 
 type Config struct {
@@ -65,6 +67,8 @@ func LoadConfig() (*Config, error) {
 	c.Tunl.MaxPostSize, _ = sect.Key("max_post_size").Int()
 	c.Tunl.ClientExpireAt, _ = sect.Key("client_expire_at").Int()
 	c.Tunl.UriPrefixSize, _ = sect.Key("uri_prefix_size").Int()
+	c.Tunl.ServerPrivate, _ = sect.Key("server_private").Bool()
+	c.Tunl.ServerPassword = sect.Key("server_password").String()
 
 	return c, nil
 }
