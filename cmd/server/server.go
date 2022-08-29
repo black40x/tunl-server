@@ -56,7 +56,10 @@ func (s *TunlServer) Start(conf Config) error {
 		c := tunl.NewTunlConn(conn)
 
 		if s.pool.Count()+1 > s.conf.MaxClients {
-			c.Send(&commands.ServerFull{})
+			c.Send(&commands.Error{
+				Code:    tunl.ErrorServerFull,
+				Message: "server full",
+			})
 			c.Close()
 			continue
 		}
@@ -74,7 +77,8 @@ func (s *TunlServer) Start(conf Config) error {
 		go c.HandleConnection()
 		go c.HandleExpire()
 
-		c.Send(&commands.Connect{
+		// ToDo - Add password protect
+		c.Send(&commands.ServerConnect{
 			Prefix:    c.ID,
 			PublicUrl: fmt.Sprintf(conf.Tunl.ClientPublicAddr, c.ID),
 			Expire:    int64(conf.Tunl.ClientExpireAt),

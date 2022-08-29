@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/black40x/tunl-core/commands"
+	"github.com/black40x/tunl-core/tunl"
 	"github.com/black40x/tunl-server/cmd/tui"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -94,7 +95,7 @@ func (s *TunlHttp) handle(w http.ResponseWriter, r *http.Request) {
 			} else {
 				if r.ContentLength > 0 {
 					re := bufio.NewReader(r.Body)
-					buf := make([]byte, 0, ReaderSize)
+					buf := make([]byte, 0, tunl.ReaderSize)
 					for {
 						n, err := re.Read(buf[:cap(buf)])
 						buf = buf[:n]

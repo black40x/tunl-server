@@ -34,8 +34,6 @@ type Config struct {
 	Tunl *TunlConfig
 }
 
-const ReaderSize = 1 << 20
-
 func LoadConfig() (*Config, error) {
 	cfg, err := ini.LooseLoad("./conf/default.ini", "./conf/dev.ini", "./conf/prod.ini")
 	if err != nil {
