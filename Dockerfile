@@ -2,14 +2,14 @@
 
 FROM golang:1.19.2-alpine
 
-WORKDIR /tunl
+WORKDIR /app
 
 COPY . .
 
-RUN go build -o /tunl/tunl-server ./cmd
+RUN go build -o /app/tunl-server ./cmd
 
-COPY ./conf /tunl/conf
+COPY ./conf /app/conf
 
 EXPOSE 8080 5000
 
-CMD [ "/tunl/tunl-server" ]
+CMD [ "/app/tunl-server" ]
