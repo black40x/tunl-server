@@ -7,7 +7,7 @@ The open-source developer platform for share localhost and inspect incoming traf
 ## Build
 
 ```
-go get
+go mod tidy
 go build -o ./build/tunl-server ./cmd
 mkdir ./build/conf/ && cp conf/default.ini ./build/conf/default.ini
 ```
