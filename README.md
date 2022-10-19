@@ -14,7 +14,7 @@ mkdir ./build/conf/ && cp conf/default.ini ./build/conf/default.ini
 
 ```
 docker build -t tunl . 
-docker run --restart unless-stopped -p 5000:5000 -p 80:8080 tunl
+docker run -d --net host --restart unless-stopped -p 5000:5000 -p 80:8080 tunl
 ```
 
 ## License
