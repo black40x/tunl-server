@@ -11,10 +11,10 @@ import (
 type TunlServer struct {
 	ln   net.Listener
 	pool *ConnectionPool
-	conf *TunlConfig
+	conf *Tunl
 }
 
-func NewTunlServer(conf *TunlConfig) *TunlServer {
+func NewTunlServer(conf *Tunl) *TunlServer {
 	return &TunlServer{
 		pool: NewConnectionPool(conf.UriPrefixSize),
 		conf: conf,

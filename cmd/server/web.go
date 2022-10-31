@@ -170,22 +170,22 @@ func (s *TunlHttp) Start() {
 	r := mux.NewRouter()
 	r.Host(s.conf.Tunl.ClientSubDomain).HandlerFunc(s.handle)
 
-	addr := s.conf.Base.HTTPAddr + ":" + s.conf.Base.HTTPPort
+	addr := s.conf.Server.HTTPAddr + ":" + s.conf.Server.HTTPPort
 	concurrency := runtime.NumCPU() * 2
 	listener, _ := net.Listen("tcp", addr)
-	listener = netutil.LimitListener(listener, concurrency*s.conf.Base.ThreadCount)
+	listener = netutil.LimitListener(listener, concurrency*s.conf.Server.ThreadCount)
 
 	s.httpSrv = &http.Server{
 		Addr:        addr,
 		Handler:     r,
-		ReadTimeout: time.Duration(s.conf.Base.ReadTimeout) * time.Second,
-		IdleTimeout: time.Duration(s.conf.Base.IdleTimeout) * time.Second,
+		ReadTimeout: time.Duration(s.conf.Server.ReadTimeout) * time.Second,
+		IdleTimeout: time.Duration(s.conf.Server.IdleTimeout) * time.Second,
 	}
-	s.httpSrv.SetKeepAlivesEnabled(s.conf.Base.KeepAlive)
+	s.httpSrv.SetKeepAlivesEnabled(s.conf.Server.KeepAlive)
 
 	go func() {
-		if s.conf.Base.SSL {
-			if err := s.httpSrv.ServeTLS(listener, s.conf.Base.CertFile, s.conf.Base.KeyFile); err != nil {
+		if s.conf.Server.SSL {
+			if err := s.httpSrv.ServeTLS(listener, s.conf.Server.CertFile, s.conf.Server.KeyFile); err != nil {
 				if err != http.ErrServerClosed {
 					tui.PrintError(err)
 					os.Exit(1)

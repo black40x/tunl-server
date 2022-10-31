@@ -23,7 +23,7 @@ func startTunlServer() {
 	tunlHttp := server.NewTunlHttp(conf, ctx)
 	tunlHttp.Start()
 
-	tui.PrintServerStarted(conf.Base.HTTPAddr, conf.Base.HTTPPort, Version)
+	tui.PrintServerStarted(conf.Server.HTTPAddr, conf.Server.HTTPPort, Version)
 
 	var wait time.Duration
 	c := make(chan os.Signal, 1)
