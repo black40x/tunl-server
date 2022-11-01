@@ -4,3 +4,4 @@ build
 
 conf/dev.yaml
 conf/prod.yaml
+logs

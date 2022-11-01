@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/black40x/golog"
 	"github.com/black40x/tunl-core/commands"
 	"github.com/black40x/tunl-core/tunl"
 	"net"
@@ -12,12 +13,14 @@ type TunlServer struct {
 	ln   net.Listener
 	pool *ConnectionPool
 	conf *Tunl
+	log  *golog.Logger
 }
 
-func NewTunlServer(conf *Tunl) *TunlServer {
+func NewTunlServer(conf *Tunl, log *golog.Logger) *TunlServer {
 	return &TunlServer{
 		pool: NewConnectionPool(conf.UriPrefixSize),
 		conf: conf,
+		log:  log,
 	}
 }
 
@@ -28,19 +31,32 @@ func (s *TunlServer) GetPool() *ConnectionPool {
 func (s *TunlServer) processCommand(cmd *commands.Transfer, conn *tunl.TunlConn) {
 	switch cmd.GetCommand().(type) {
 	case *commands.Transfer_ClientConnect:
+		if s.log != nil {
+			s.log.Info(fmt.Sprintf("(TCP) %s try to connect", conn.Conn.RemoteAddr().String()))
+		}
+
 		if !s.conf.ServerPrivate || (s.conf.ServerPrivate && s.conf.ServerPassword == cmd.GetClientConnect().Password) {
+			pubUrl := fmt.Sprintf(s.conf.ClientPublicAddr, conn.ID)
 			conn.Send(&commands.ServerConnect{
 				Prefix:    conn.ID,
-				PublicUrl: fmt.Sprintf(s.conf.ClientPublicAddr, conn.ID),
+				PublicUrl: pubUrl,
 				Expire:    int64(s.conf.ClientExpireAt),
 			})
 			s.pool.SetAllowed(conn.ID)
+
+			if s.log != nil {
+				s.log.Info(fmt.Sprintf("(TCP) %s allow with URL %s", conn.Conn.RemoteAddr().String(), pubUrl))
+			}
 		}
 		if s.conf.ServerPrivate && s.conf.ServerPassword != cmd.GetClientConnect().Password {
 			conn.Send(&commands.Error{
 				Code:    tunl.ErrorUnauthorized,
 				Message: "invalid server password",
 			})
+
+			if s.log != nil {
+				s.log.Warning(fmt.Sprintf("(TCP) %s invalid server password", conn.Conn.RemoteAddr().String()))
+			}
 		}
 	case *commands.Transfer_HttpResponse:
 		if s.pool.IsAllowed(conn.ID) {
@@ -80,6 +96,11 @@ func (s *TunlServer) Start(conf Config) error {
 				Message: "server client queue full",
 			})
 			c.Close()
+
+			if s.log != nil {
+				s.log.Warning("(TCP) client queue is full")
+			}
+
 			continue
 		}
 
@@ -87,6 +108,9 @@ func (s *TunlServer) Start(conf Config) error {
 			s.processCommand(cmd, c)
 		})
 		c.SetOnDisconnected(func() {
+			if s.log != nil {
+				s.log.Info(fmt.Sprintf("(TCP) %s disconnect", c.Conn.RemoteAddr()))
+			}
 			s.pool.Drop(c.ID)
 		})
 		c.SetOnError(func(err error) {})

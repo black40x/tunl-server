@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/black40x/golog"
 	"github.com/black40x/gover"
 	"github.com/black40x/tunl-server/cmd/server"
 	"github.com/black40x/tunl-server/cmd/tui"
@@ -35,7 +36,16 @@ func startTunlServer() {
 		os.Exit(1)
 	}
 
-	tunlHttp := server.NewTunlHttp(conf, ctx)
+	var logger *golog.Logger
+	if conf.Log.Enabled {
+		logger = golog.NewLogger(&golog.Options{
+			LogDir:  conf.Log.LogDir,
+			Daily:   conf.Log.LogDaily,
+			LogName: "tunl-server",
+		}, golog.Ltime|golog.Ldate)
+	}
+
+	tunlHttp := server.NewTunlHttp(conf, logger, ctx)
 	tunlHttp.Start()
 
 	tui.PrintServerStarted(

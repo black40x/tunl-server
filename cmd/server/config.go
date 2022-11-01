@@ -34,9 +34,16 @@ type Tunl struct {
 	ServerPassword   string `yaml:"server_password"`
 }
 
+type Log struct {
+	Enabled  bool   `yaml:"enabled"`
+	LogDir   string `yaml:"log_dir"`
+	LogDaily bool   `yaml:"log_daily"`
+}
+
 type Config struct {
 	Server *Server `yaml:"server"`
 	Tunl   *Tunl   `yaml:"tunl"`
+	Log    *Log    `yaml:"log"`
 }
 
 var configFiles = []string{

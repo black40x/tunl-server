@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/black40x/golog"
 	"github.com/black40x/tunl-core/commands"
 	"github.com/black40x/tunl-core/tunl"
 	"github.com/black40x/tunl-server/cmd/tui"
@@ -22,15 +24,17 @@ type TunlHttp struct {
 	tunl    *TunlServer
 	conf    *Config
 	httpSrv *http.Server
+	log     *golog.Logger
 	ctx     context.Context
 }
 
 type JsonData map[string]interface{}
 
-func NewTunlHttp(conf *Config, ctx context.Context) *TunlHttp {
+func NewTunlHttp(conf *Config, log *golog.Logger, ctx context.Context) *TunlHttp {
 	return &TunlHttp{
 		conf: conf,
 		ctx:  ctx,
+		log:  log,
 	}
 }
 
@@ -147,18 +151,32 @@ func (s *TunlHttp) handle(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *TunlHttp) Shutdown() {
+	if s.log != nil {
+		s.log.Info("Shutdown server")
+	}
+
 	if s.httpSrv != nil {
 		s.httpSrv.Shutdown(s.ctx)
 	}
 }
 
 func (s *TunlHttp) startTunl() {
-	s.tunl = NewTunlServer(s.conf.Tunl)
+	s.tunl = NewTunlServer(s.conf.Tunl, s.log)
+
+	if s.log != nil {
+		s.log.Info("(TCP) Starting tunl server...")
+	}
+
 	go func() {
 		err := s.tunl.Run(s.conf)
 
 		if err != nil {
 			tui.PrintError(err)
+
+			if s.log != nil {
+				s.log.Error("(TCP) " + err.Error())
+			}
+
 			os.Exit(1)
 		}
 	}()
@@ -183,10 +201,18 @@ func (s *TunlHttp) Start() {
 	}
 	s.httpSrv.SetKeepAlivesEnabled(s.conf.Server.KeepAlive)
 
+	if s.log != nil {
+		s.log.Info(fmt.Sprintf("(HTTP) Starting server at %s, SSL mod: %v", addr, s.conf.Server.SSL))
+	}
+
 	go func() {
 		if s.conf.Server.SSL {
 			if err := s.httpSrv.ServeTLS(listener, s.conf.Server.CertFile, s.conf.Server.KeyFile); err != nil {
 				if err != http.ErrServerClosed {
+					if s.log != nil {
+						s.log.Error("(HTTP) " + err.Error())
+					}
+
 					tui.PrintError(err)
 					os.Exit(1)
 				}
@@ -194,6 +220,10 @@ func (s *TunlHttp) Start() {
 		} else {
 			if err := s.httpSrv.Serve(listener); err != nil {
 				if err != http.ErrServerClosed {
+					if s.log != nil {
+						s.log.Error("(HTTP) " + err.Error())
+					}
+
 					tui.PrintError(err)
 					os.Exit(1)
 				}

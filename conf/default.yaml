@@ -23,3 +23,8 @@ tunl:
   server_private: false
   uri_prefix_size: 6
   allow_names: false
+
+log:
+  enabled: true
+  log_dir: "./logs"
+  log_daily: true
