@@ -21,18 +21,19 @@ type Server struct {
 }
 
 type Tunl struct {
-	TunlAddr         string `yaml:"tunl_addr"`
-	TunlPort         string `yaml:"tunl_port"`
-	MaxClients       int    `yaml:"max_clients"`
-	MaxTimeout       int    `yaml:"max_timeout"`
-	ClientSubDomain  string `yaml:"client_subdomain"`
-	ClientPublicAddr string `yaml:"client_public_addr"`
-	MaxPostSize      int    `yaml:"max_post_size"`
-	ClientExpireAt   int    `yaml:"client_expire_at"`
-	UriPrefixSize    int    `yaml:"uri_prefix_size"`
-	ServerPrivate    bool   `yaml:"server_private"`
-	ServerPassword   string `yaml:"server_password"`
-	AllowNames       bool   `yaml:"allow_names"`
+	Addr           string `yaml:"addr"`
+	Port           string `yaml:"port"`
+	Domain         string `yaml:"domain"`
+	SchemeHttps    bool   `yaml:"scheme_https"`
+	MaxClients     int    `yaml:"max_clients"`
+	MaxTimeout     int    `yaml:"max_timeout"`
+	MaxPostSize    int    `yaml:"max_post_size"`
+	ClientExpireAt int    `yaml:"client_expire_at"`
+	UriPrefixSize  int    `yaml:"uri_prefix_size"`
+	ServerPrivate  bool   `yaml:"server_private"`
+	ServerPassword string `yaml:"server_password"`
+	AllowNames     bool   `yaml:"allow_names"`
+	BrowserWarning bool   `yaml:"browser_warning"`
 }
 
 type Log struct {

@@ -36,7 +36,12 @@ func (s *TunlServer) processCommand(cmd *commands.Transfer, conn *tunl.TunlConn)
 		}
 
 		if !s.conf.ServerPrivate || (s.conf.ServerPrivate && s.conf.ServerPassword == cmd.GetClientConnect().Password) {
-			pubUrl := fmt.Sprintf(s.conf.ClientPublicAddr, conn.ID)
+			scheme := "http"
+			if s.conf.SchemeHttps {
+				scheme = "https"
+			}
+			pubUrl := fmt.Sprintf("%s://%s.%s", scheme, conn.ID, s.conf.Domain)
+
 			conn.Send(&commands.ServerConnect{
 				Prefix:    conn.ID,
 				PublicUrl: pubUrl,
@@ -77,7 +82,7 @@ func (s *TunlServer) processCommand(cmd *commands.Transfer, conn *tunl.TunlConn)
 
 func (s *TunlServer) Start(conf Config) error {
 	var err error
-	s.ln, err = net.Listen("tcp", conf.Tunl.TunlAddr+":"+conf.Tunl.TunlPort)
+	s.ln, err = net.Listen("tcp", conf.Tunl.Addr+":"+conf.Tunl.Port)
 	if err != nil {
 		return err
 	}

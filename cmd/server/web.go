@@ -9,16 +9,22 @@ import (
 	"github.com/black40x/tunl-core/commands"
 	"github.com/black40x/tunl-core/tunl"
 	"github.com/black40x/tunl-server/cmd/tui"
+	"github.com/black40x/tunl-server/cmd/utils"
+	"github.com/black40x/tunl-server/ui"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"golang.org/x/net/netutil"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
 	"runtime"
 	"time"
 )
+
+const BrowserWarningCookieName = "tunl-online-skip-warning"
+const BrowserWarningHeaderName = "Tunl-Online-Skip-Warning"
 
 type TunlHttp struct {
 	tunl    *TunlServer
@@ -55,6 +61,21 @@ func (s *TunlHttp) responseJSON(w http.ResponseWriter, status int, data JsonData
 	return nil
 }
 
+// conn *tunl.TunlConn,
+func (s *TunlHttp) browserWarning(w http.ResponseWriter) {
+	appUI, err := fs.Sub(ui.AppUI, "app/build")
+	if err != nil {
+		return
+	}
+
+	file, _ := appUI.Open("index.html")
+	defer file.Close()
+
+	w.WriteHeader(401)
+	data, _ := io.ReadAll(file)
+	w.Write(data)
+}
+
 func (s *TunlHttp) handle(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
@@ -64,6 +85,13 @@ func (s *TunlHttp) handle(w http.ResponseWriter, r *http.Request) {
 		if s.tunl.pool.Get(params["subdomain"]) == nil {
 			s.responseJSON(w, http.StatusForbidden, JsonData{"error": "Undefined client ID"}, nil)
 		} else {
+			if s.conf.Tunl.BrowserWarning {
+				if utils.IsBrowserRequest(r) && !utils.HasCookie(r, BrowserWarningCookieName) {
+					s.browserWarning(w)
+					return
+				}
+			}
+
 			req := commands.HttpRequest{
 				Uuid:          uuid.New().String(),
 				Method:        r.Method,
@@ -185,8 +213,15 @@ func (s *TunlHttp) startTunl() {
 func (s *TunlHttp) Start() {
 	s.startTunl()
 
+	appAssets, _ := fs.Sub(ui.AppUI, "app/build/static")
+
 	r := mux.NewRouter()
-	r.Host(s.conf.Tunl.ClientSubDomain).HandlerFunc(s.handle)
+	r.Host("cdn." + s.conf.Tunl.Domain).
+		PathPrefix("/app/static/").
+		Handler(http.StripPrefix("/app/static/", utils.NoFileListing(
+			http.FileServer(http.FS(appAssets)),
+		)))
+	r.Host("{subdomain:[0-9a-z/-]+}." + s.conf.Tunl.Domain).HandlerFunc(s.handle)
 
 	addr := s.conf.Server.HTTPAddr + ":" + s.conf.Server.HTTPPort
 	concurrency := runtime.NumCPU() * 2

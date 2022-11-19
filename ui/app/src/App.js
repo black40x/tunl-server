@@ -1,25 +1,24 @@
-import logo from './logo.svg';
 import './App.css';
+import BrowserWaringPanel from "./components/BrowserWaringPanel";
+import Link from '@mui/joy/Link';
+import Typography from "@mui/joy/Typography";
+import { CssVarsProvider } from '@mui/joy/styles';
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+    return (
+        <CssVarsProvider
+            defaultMode="system"
+            modeStorageKey="identify-system-mode"
         >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+            <div className="App">
+                <BrowserWaringPanel/>
+
+                <Typography level="body3" sx={{mb: 2}}>
+                    Hosted by tunl.online, view project on the <Link href="https://github.com/black40x/tunl-cli" target="_blank">GitHub</Link>
+                </Typography>
+            </div>
+        </CssVarsProvider>
+    );
 }
 
 export default App;
