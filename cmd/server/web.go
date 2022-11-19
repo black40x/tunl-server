@@ -3,7 +3,6 @@ package server
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/black40x/golog"
 	"github.com/black40x/tunl-core/commands"
@@ -14,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"golang.org/x/net/netutil"
+	"html/template"
 	"io"
 	"io/fs"
 	"net"
@@ -27,152 +27,138 @@ const BrowserWarningCookieName = "tunl-online-skip-warning"
 const BrowserWarningHeaderName = "Tunl-Online-Skip-Warning"
 
 type TunlHttp struct {
-	tunl    *TunlServer
-	conf    *Config
-	httpSrv *http.Server
-	log     *golog.Logger
-	ctx     context.Context
+	tunl        *TunlServer
+	conf        *Config
+	httpSrv     *http.Server
+	log         *golog.Logger
+	ctx         context.Context
+	appTemplate *template.Template
 }
 
-type JsonData map[string]interface{}
+type AppMessage struct {
+	Title        string
+	Data         string
+	NoScriptText string
+}
 
 func NewTunlHttp(conf *Config, log *golog.Logger, ctx context.Context) *TunlHttp {
-	return &TunlHttp{
+	srv := &TunlHttp{
 		conf: conf,
 		ctx:  ctx,
 		log:  log,
 	}
+	srv.prepareTemplate()
+
+	return srv
 }
 
-func (s *TunlHttp) responseJSON(w http.ResponseWriter, status int, data JsonData, headers http.Header) error {
-	js, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	for key, value := range headers {
-		w.Header()[key] = value
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	w.Write(js)
-
-	return nil
-}
-
-// conn *tunl.TunlConn,
-func (s *TunlHttp) browserWarning(w http.ResponseWriter) {
-	appUI, err := fs.Sub(ui.AppUI, "app/build")
-	if err != nil {
-		return
-	}
-
-	file, _ := appUI.Open("index.html")
-	defer file.Close()
-
-	w.WriteHeader(401)
-	data, _ := io.ReadAll(file)
-	w.Write(data)
+func (s *TunlHttp) prepareTemplate() {
+	appUI, _ := fs.Sub(ui.AppUI, "app/build")
+	s.appTemplate, _ = template.ParseFS(appUI, "index.html")
 }
 
 func (s *TunlHttp) handle(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+	connId := params["subdomain"]
 
-	if params["subdomain"] == "" {
-		s.responseJSON(w, http.StatusForbidden, JsonData{"error": "Empty client ID"}, nil)
+	if connId == "" || s.tunl.pool.Get(connId) == nil {
+		s.browserError(connId, ErrUndefinedClient, w)
+		return
 	} else {
-		if s.tunl.pool.Get(params["subdomain"]) == nil {
-			s.responseJSON(w, http.StatusForbidden, JsonData{"error": "Undefined client ID"}, nil)
+		if s.conf.Tunl.BrowserWarning && r.Header.Get(BrowserWarningHeaderName) == "" {
+			if utils.IsBrowserRequest(r) && !utils.HasCookie(r, BrowserWarningCookieName) {
+				s.browserWarning(s.tunl.pool.Get(connId), w)
+				return
+			}
+		}
+
+		req := commands.HttpRequest{
+			Uuid:          uuid.New().String(),
+			Method:        r.Method,
+			Proto:         r.Proto,
+			Uri:           r.URL.String(),
+			ContentLength: r.ContentLength,
+			RemoteAddr:    r.RemoteAddr,
+		}
+
+		for _, v := range r.Cookies() {
+			req.Cookies = append(req.Cookies, &commands.Cookie{
+				Name:     v.Name,
+				Value:    v.Value,
+				Path:     v.Path,
+				Domain:   v.Domain,
+				Expires:  v.Expires.UnixMicro(),
+				HttpOnly: v.HttpOnly,
+				Secure:   v.Secure,
+			})
+		}
+
+		for k, v := range r.Header {
+			req.Header = append(req.Header, &commands.Header{Key: k, Value: v})
+		}
+
+		chResp := s.tunl.pool.MakeResponseChan(req.Uuid)
+		chBody := s.tunl.pool.MakeBodyChunkChan(req.Uuid)
+		defer s.tunl.pool.CloseChannels(req.Uuid)
+
+		_, err := s.tunl.pool.Get(connId).Conn().Send(&req)
+		if err != nil {
+			s.browserError(connId, ErrConnectClient, w)
+			return
 		} else {
-			if s.conf.Tunl.BrowserWarning {
-				if utils.IsBrowserRequest(r) && !utils.HasCookie(r, BrowserWarningCookieName) {
-					s.browserWarning(w)
-					return
+			if r.ContentLength > 0 {
+				re := bufio.NewReader(r.Body)
+				buf := make([]byte, 0, tunl.ReaderSize)
+				for {
+					n, err := re.Read(buf[:cap(buf)])
+					buf = buf[:n]
+					if n == 0 {
+						if err == io.EOF {
+							break
+						}
+					} else {
+						s.tunl.pool.Get(connId).Conn().Send(&commands.BodyChunk{
+							Uuid: req.Uuid,
+							Body: buf,
+							Eof:  false,
+						})
+					}
 				}
 			}
 
-			req := commands.HttpRequest{
-				Uuid:          uuid.New().String(),
-				Method:        r.Method,
-				Proto:         r.Proto,
-				Uri:           r.URL.String(),
-				ContentLength: r.ContentLength,
-				RemoteAddr:    r.RemoteAddr,
-			}
+			var bodySize int64 = 0
+			select {
+			case res := <-chResp:
+				// ToDo - add res.ErrorCode to the proto
+				if int(res.Status) == int(ErrClientResponse) {
+					s.browserError(connId, ErrClientResponse, w)
+					break
+				}
 
-			for _, v := range r.Cookies() {
-				req.Cookies = append(req.Cookies, &commands.Cookie{
-					Name:     v.Name,
-					Value:    v.Value,
-					Path:     v.Path,
-					Domain:   v.Domain,
-					Expires:  v.Expires.UnixMicro(),
-					HttpOnly: v.HttpOnly,
-					Secure:   v.Secure,
-				})
-			}
+				for _, h := range res.Header {
+					for _, v := range h.GetValue() {
+						w.Header().Add(h.GetKey(), v)
+					}
+				}
+				w.WriteHeader(int(res.Status))
 
-			for k, v := range r.Header {
-				req.Header = append(req.Header, &commands.Header{Key: k, Value: v})
-			}
-
-			chResp := s.tunl.pool.MakeResponseChan(req.Uuid)
-			chBody := s.tunl.pool.MakeBodyChunkChan(req.Uuid)
-			defer s.tunl.pool.CloseChannels(req.Uuid)
-
-			_, err := s.tunl.pool.Get(params["subdomain"]).Send(&req)
-			if err != nil {
-				s.responseJSON(w, http.StatusBadRequest, JsonData{"error": "Can't send request to the client"}, nil)
-			} else {
-				if r.ContentLength > 0 {
-					re := bufio.NewReader(r.Body)
-					buf := make([]byte, 0, tunl.ReaderSize)
+				if res.ContentLength != 0 {
+				L:
 					for {
-						n, err := re.Read(buf[:cap(buf)])
-						buf = buf[:n]
-						if n == 0 {
-							if err == io.EOF {
-								break
-							}
-						} else {
-							s.tunl.pool.Get(params["subdomain"]).Send(&commands.BodyChunk{
-								Uuid: req.Uuid,
-								Body: buf,
-								Eof:  false,
-							})
-						}
-					}
-				}
-
-				var bodySize int64 = 0
-				select {
-				case res := <-chResp:
-					for _, h := range res.Header {
-						for _, v := range h.GetValue() {
-							w.Header().Add(h.GetKey(), v)
-						}
-					}
-					w.WriteHeader(int(res.Status))
-
-					if res.ContentLength != 0 {
-					L:
-						for {
-							select {
-							case body := <-chBody:
-								bodySize += int64(len(body.Body))
-								w.Write(body.Body)
-								if (bodySize >= res.ContentLength && res.ContentLength != -1) || body.Eof {
-									break L
-								}
-							case <-time.After(time.Second * 60): // ToDo - increase wait time + add chanel client disconnect in pool!!!
+						select {
+						case body := <-chBody:
+							bodySize += int64(len(body.Body))
+							w.Write(body.Body)
+							if (bodySize >= res.ContentLength && res.ContentLength != -1) || body.Eof {
 								break L
 							}
+						case <-time.After(time.Second * 60):
+							break L
 						}
 					}
-				case <-time.After(time.Second * 30):
-					s.responseJSON(w, http.StatusBadRequest, JsonData{"error": "Can't receive request from client"}, nil)
 				}
+			case <-time.After(time.Second * 30):
+				s.browserError(connId, ErrReceiveData, w)
 			}
 		}
 	}

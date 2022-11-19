@@ -47,7 +47,9 @@ func (s *TunlServer) processCommand(cmd *commands.Transfer, conn *tunl.TunlConn)
 				PublicUrl: pubUrl,
 				Expire:    int64(s.conf.ClientExpireAt),
 			})
-			s.pool.SetAllowed(conn.ID)
+
+			s.pool.Get(conn.ID).SetAllowed(true)
+			s.pool.Get(conn.ID).SetHost(pubUrl)
 
 			if s.log != nil {
 				s.log.Info(fmt.Sprintf("(TCP) %s allow with URL %s", conn.Conn.RemoteAddr().String(), pubUrl))
@@ -64,14 +66,14 @@ func (s *TunlServer) processCommand(cmd *commands.Transfer, conn *tunl.TunlConn)
 			}
 		}
 	case *commands.Transfer_HttpResponse:
-		if s.pool.IsAllowed(conn.ID) {
+		if s.pool.Get(conn.ID).IsAllowed() {
 			ch := s.pool.GetResponseChan(cmd.GetHttpResponse().Uuid)
 			if ch != nil {
 				ch <- cmd.GetHttpResponse()
 			}
 		}
 	case *commands.Transfer_BodyChunk:
-		if s.pool.IsAllowed(conn.ID) {
+		if s.pool.Get(conn.ID).IsAllowed() {
 			ch := s.pool.GetBodyChunkChan(cmd.GetBodyChunk().Uuid)
 			if ch != nil {
 				ch <- cmd.GetBodyChunk()
