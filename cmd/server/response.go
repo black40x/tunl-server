@@ -36,7 +36,7 @@ func (s *TunlHttp) browserWarning(conn *Connection, w http.ResponseWriter) {
 	json, _ := json.Marshal(message)
 
 	data := AppMessage{
-		Title:        "Warning",
+		Title:        "Warning!",
 		NoScriptText: BrowserWarningNoScriptText,
 		Data:         base64.StdEncoding.EncodeToString(json),
 	}
