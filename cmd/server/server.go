@@ -32,7 +32,23 @@ func (s *TunlServer) processCommand(cmd *commands.Transfer, conn *tunl.TunlConn)
 	switch cmd.GetCommand().(type) {
 	case *commands.Transfer_ClientConnect:
 		if s.log != nil {
-			s.log.Info(fmt.Sprintf("(TCP) %s try to connect", conn.Conn.RemoteAddr().String()))
+			s.log.Info(fmt.Sprintf(
+				"(TCP) %s try to connect client with version %s",
+				conn.Conn.RemoteAddr().String(),
+				cmd.GetClientConnect().Version,
+			))
+		}
+
+		if CheckClientUp(cmd.GetClientConnect().Version) {
+			conn.Send(&commands.Error{
+				Code: tunl.ErrorUnauthorized,
+				Message: fmt.Sprintf(
+					"invalid client version %s, minimum client version %s",
+					cmd.GetClientConnect().Version,
+					ClientMinimumVersion,
+				),
+			})
+			break
 		}
 
 		if !s.conf.ServerPrivate || (s.conf.ServerPrivate && s.conf.ServerPassword == cmd.GetClientConnect().Password) {

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/black40x/golog"
-	"github.com/black40x/gover"
 	"github.com/black40x/tunl-server/cmd/server"
 	"github.com/black40x/tunl-server/cmd/tui"
 	"os"
@@ -13,21 +12,10 @@ import (
 	"time"
 )
 
-var Version = "1.0.0"
-
-func checkVersion() {
-	currentV, _ := gover.NewVersion(Version)
-	latestV, err := gover.GetGithubVersion("black40x", "tunl-server")
-	if err == nil {
-		ver, _ := latestV.GetVersion()
-		if ver.NewerThan(*currentV) {
-			tui.PrintWarning(fmt.Sprintf("update available: %s\n", ver.String()))
-		}
-	}
-}
-
 func startTunlServer() {
-	checkVersion()
+	if ver := server.CheckUpdates(); ver != nil {
+		tui.PrintWarning(fmt.Sprintf("update available: %s\n", ver.String()))
+	}
 
 	ctx := context.Background()
 	conf, err := server.LoadConfig()
@@ -51,7 +39,7 @@ func startTunlServer() {
 	tui.PrintServerStarted(
 		conf.Server.HTTPAddr,
 		conf.Server.HTTPPort,
-		Version,
+		server.Version,
 	)
 
 	var wait time.Duration
