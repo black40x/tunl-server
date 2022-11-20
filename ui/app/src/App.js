@@ -7,7 +7,7 @@ import ErrorPanel from "./components/ErrorPanel";
 
 function App() {
     let message = {
-        code: 1002
+        code: 1000
     }
 
     try {

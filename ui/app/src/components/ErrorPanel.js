@@ -6,7 +6,7 @@ import Typography from '@mui/joy/Typography';
 const ErrUndefinedClient = 1001
 const ErrConnectClient = 1002
 const ErrReceiveData = 1003
-const ErrClientResponse = 2000
+const ErrClientResponse = 2003
 
 function ErrorPanel(props) {
     let {message} = props

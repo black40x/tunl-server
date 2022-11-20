@@ -28,7 +28,7 @@ func (s *TunlHttp) responseJSON(w http.ResponseWriter, status int, data JsonData
 
 func (s *TunlHttp) browserWarning(conn *Connection, w http.ResponseWriter) {
 	message := JsonData{
-		"code":      ErrBrowserWarning,
+		"code":      ErrorBrowserWarning,
 		"remote_ip": conn.GetRemoteIP(),
 		"tunl_host": conn.GetHost(),
 		"tunl_id":   conn.GetID(),

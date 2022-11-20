@@ -62,7 +62,7 @@ func (s *TunlHttp) handle(w http.ResponseWriter, r *http.Request) {
 	connId := params["subdomain"]
 
 	if connId == "" || s.tunl.pool.Get(connId) == nil {
-		s.browserError(connId, ErrUndefinedClient, w)
+		s.browserError(connId, ErrorUndefinedClient, w)
 		return
 	} else {
 		if s.conf.Tunl.BrowserWarning && r.Header.Get(BrowserWarningHeaderName) == "" {
@@ -103,7 +103,7 @@ func (s *TunlHttp) handle(w http.ResponseWriter, r *http.Request) {
 
 		_, err := s.tunl.pool.Get(connId).Conn().Send(&req)
 		if err != nil {
-			s.browserError(connId, ErrConnectClient, w)
+			s.browserError(connId, ErrorConnectClient, w)
 			return
 		} else {
 			if r.ContentLength > 0 {
@@ -129,9 +129,8 @@ func (s *TunlHttp) handle(w http.ResponseWriter, r *http.Request) {
 			var bodySize int64 = 0
 			select {
 			case res := <-chResp:
-				// ToDo - add res.ErrorCode to the proto
-				if int(res.Status) == int(ErrClientResponse) {
-					s.browserError(connId, ErrClientResponse, w)
+				if int(res.ErrorCode) == int(tunl.ErrorClientResponse) {
+					s.browserError(connId, ErrorCode(tunl.ErrorClientResponse), w)
 					break
 				}
 
@@ -158,7 +157,7 @@ func (s *TunlHttp) handle(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			case <-time.After(time.Second * 30):
-				s.browserError(connId, ErrReceiveData, w)
+				s.browserError(connId, ErrorReceiveData, w)
 			}
 		}
 	}
