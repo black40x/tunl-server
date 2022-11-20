@@ -13,7 +13,9 @@ function App() {
     try {
         const body = document.getElementById("body")
         message = JSON.parse(atob(body.dataset.message))
-    } catch (e) {}
+    } catch (e) {
+
+    }
 
     return (
         <CssVarsProvider
