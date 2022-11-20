@@ -11,18 +11,17 @@ server:
   cert_file:
 
 tunl:
-  tunl_addr: "0.0.0.0"
-  tunl_port: 5000
+  addr: "0.0.0.0"
+  port: 5000
+  domain: "tunl.online"
+  scheme_https: false
   max_post_size: 2
   max_clients: 150
   max_timeout: 30
-  client_subdomain: "{subdomain:[0-9a-z/-]+}.tunl.online"
-  client_public_addr: "http://%s.tunl.online"
   client_expire_at: 60
   server_password:
   server_private: false
   uri_prefix_size: 6
-  allow_names: false
   browser_warning: true
 log:
   enabled: true
