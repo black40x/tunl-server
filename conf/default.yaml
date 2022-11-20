@@ -1,0 +1,29 @@
+server:
+  http_addr: "0.0.0.0"
+  http_port: 8080
+  idle_timeout: 120
+  read_timeout: 120
+  thread_count: 120
+  keep_alive: true
+  debug: false
+  use_ssl: false
+  key_file:
+  cert_file:
+
+tunl:
+  addr: "0.0.0.0"
+  port: 5000
+  domain: "tunl.online"
+  scheme_https: false
+  max_post_size: 2
+  max_clients: 150
+  max_timeout: 30
+  client_expire_at: 60
+  server_password:
+  server_private: false
+  uri_prefix_size: 6
+  browser_warning: true
+log:
+  enabled: true
+  log_dir: "./logs"
+  log_daily: true

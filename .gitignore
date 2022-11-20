@@ -2,5 +2,6 @@
 .DS_Store
 build
 
-conf/dev.ini
-conf/prod.ini
+conf/dev.yaml
+conf/prod.yaml
+logs
