@@ -70,7 +70,6 @@ func NewConnectionPool(prefixSize int) *ConnectionPool {
 func (p *ConnectionPool) generateID(conn *tunl.TunlConn) string {
 	remoteIP := conn.Conn.RemoteAddr().(*net.TCPAddr).IP.String()
 	remoteIP = strings.ReplaceAll(remoteIP, ".", "-")
-	return "s1"
 	return remoteIP + "-" + utils.RandomString(p.prefixSize)
 }
 
