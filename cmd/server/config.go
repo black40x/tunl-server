@@ -32,7 +32,6 @@ type Tunl struct {
 	UriPrefixSize  int    `yaml:"uri_prefix_size"`
 	ServerPrivate  bool   `yaml:"server_private"`
 	ServerPassword string `yaml:"server_password"`
-	AllowNames     bool   `yaml:"allow_names"`
 	BrowserWarning bool   `yaml:"browser_warning"`
 }
 
