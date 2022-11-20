@@ -34,7 +34,7 @@ func (s *TunlServer) processCommand(cmd *commands.Transfer, conn *tunl.TunlConn)
 		if s.log != nil {
 			s.log.Info(fmt.Sprintf(
 				"(TCP) %s try to connect client with version %s",
-				conn.Conn.RemoteAddr().String(),
+				conn.Conn.RemoteAddr().(*net.TCPAddr).IP.String(),
 				cmd.GetClientConnect().Version,
 			))
 		}
