@@ -48,6 +48,12 @@ func (s *TunlServer) processCommand(cmd *commands.Transfer, conn *tunl.TunlConn)
 					ClientMinimumVersion,
 				),
 			})
+			if s.log != nil {
+				s.log.Error(fmt.Sprintf(
+					"(TCP) %s reset connection by version",
+					conn.Conn.RemoteAddr().(*net.TCPAddr).IP.String(),
+				))
+			}
 			break
 		}
 
