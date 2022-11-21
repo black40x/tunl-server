@@ -30,7 +30,7 @@ function App() {
                 )}
 
                 <Typography level="body3" sx={{mb: 2}}>
-                    Hosted by tunl.online, view project on the <Link href="https://github.com/black40x/tunl-cli" target="_blank">GitHub</Link>
+                    Hosted by tunl.online, view project on the <Link href="https://github.com/black40x/tunl" target="_blank">GitHub</Link>
                 </Typography>
             </div>
         </CssVarsProvider>
