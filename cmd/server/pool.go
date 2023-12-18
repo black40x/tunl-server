@@ -69,8 +69,9 @@ func NewConnectionPool(prefixSize int) *ConnectionPool {
 
 func (p *ConnectionPool) generateID(conn *tunl.TunlConn) string {
 	remoteIP := conn.Conn.RemoteAddr().(*net.TCPAddr).IP.String()
-	remoteIP = strings.ReplaceAll(remoteIP, ".", "-")
-	return remoteIP + "-" + utils.RandomString(p.prefixSize)
+	remoteIP = strings.ReplaceAll(remoteIP, ".", "-") + "-"
+	remoteIP = strings.ReplaceAll(remoteIP, "::1-", "")
+	return remoteIP + utils.RandomString(p.prefixSize)
 }
 
 func (p *ConnectionPool) Push(conn *tunl.TunlConn) error {
