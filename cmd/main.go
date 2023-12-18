@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/black40x/golog"
-	"github.com/black40x/tunl-server/cmd/server"
-	"github.com/black40x/tunl-server/cmd/tui"
 	"os"
 	"os/signal"
 	"time"
+	"tunl-server/cmd/server"
+	"tunl-server/cmd/tui"
 )
 
 func startTunlServer() {

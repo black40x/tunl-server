@@ -4,10 +4,10 @@ import (
 	"errors"
 	"github.com/black40x/tunl-core/commands"
 	"github.com/black40x/tunl-core/tunl"
-	"github.com/black40x/tunl-server/cmd/utils"
 	"net"
 	"strings"
 	"sync"
+	"tunl-server/cmd/utils"
 )
 
 const responseKeyPrefix = "response:"

@@ -7,9 +7,6 @@ import (
 	"github.com/black40x/golog"
 	"github.com/black40x/tunl-core/commands"
 	"github.com/black40x/tunl-core/tunl"
-	"github.com/black40x/tunl-server/cmd/tui"
-	"github.com/black40x/tunl-server/cmd/utils"
-	"github.com/black40x/tunl-server/ui"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"golang.org/x/net/netutil"
@@ -21,6 +18,9 @@ import (
 	"os"
 	"runtime"
 	"time"
+	"tunl-server/cmd/tui"
+	"tunl-server/cmd/utils"
+	"tunl-server/ui"
 )
 
 const BrowserWarningCookieName = "tunl-online-skip-warning"
