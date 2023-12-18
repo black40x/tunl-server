@@ -4,10 +4,10 @@ import (
 	"errors"
 	"github.com/black40x/tunl-core/commands"
 	"github.com/black40x/tunl-core/tunl"
-	"github.com/black40x/tunl-server/cmd/utils"
 	"net"
 	"strings"
 	"sync"
+	"tunl-server/cmd/utils"
 )
 
 const responseKeyPrefix = "response:"
@@ -69,8 +69,9 @@ func NewConnectionPool(prefixSize int) *ConnectionPool {
 
 func (p *ConnectionPool) generateID(conn *tunl.TunlConn) string {
 	remoteIP := conn.Conn.RemoteAddr().(*net.TCPAddr).IP.String()
-	remoteIP = strings.ReplaceAll(remoteIP, ".", "-")
-	return remoteIP + "-" + utils.RandomString(p.prefixSize)
+	remoteIP = strings.ReplaceAll(remoteIP, ".", "-") + "-"
+	remoteIP = strings.ReplaceAll(remoteIP, "::1-", "")
+	return remoteIP + utils.RandomString(p.prefixSize)
 }
 
 func (p *ConnectionPool) Push(conn *tunl.TunlConn) error {
