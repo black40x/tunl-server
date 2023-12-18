@@ -81,5 +81,21 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	if os.Getenv("SERVER_ADDR") != "" {
+		conf.Server.HTTPAddr = os.Getenv("SERVER_ADDR")
+	}
+	if os.Getenv("SERVER_PORT") != "" {
+		conf.Server.HTTPPort = os.Getenv("SERVER_PORT")
+	}
+	if os.Getenv("TUNL_ADDR") != "" {
+		conf.Tunl.Addr = os.Getenv("TUNL_ADDR")
+	}
+	if os.Getenv("TUNL_PORT") != "" {
+		conf.Tunl.Port = os.Getenv("TUNL_PORT")
+	}
+	if os.Getenv("TUNL_DOMAIN") != "" {
+		conf.Tunl.Domain = os.Getenv("TUNL_DOMAIN")
+	}
+
 	return conf, nil
 }
